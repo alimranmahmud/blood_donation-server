@@ -41,7 +41,7 @@ next()
 
 
 
-const uri = "mongodb+srv://garments_user:9rHacx5v975SerIQ@cluster0.wlngie2.mongodb.net/?appName=Cluster0";
+const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.wlngie2.mongodb.net/?appName=Cluster0`;
 
 
 
@@ -60,7 +60,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const database = client.db('garmentsDB')
     const userCollections = database.collection('user')
@@ -263,7 +263,7 @@ app.post('/success-payment',async(req,res)=>{
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
