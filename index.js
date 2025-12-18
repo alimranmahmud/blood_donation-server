@@ -193,7 +193,7 @@ app.post('/create-payment-checkout', async (req, res) => {
         donorName: information?.donorName || 'Anonymous'
       },
       customer_email: information.donorEmail,
-      success_url: `${process.env.SITE_DOMAIN}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.SITE_DOMAIN}payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.SITE_DOMAIN}/payment-cancelled`
     });
 
@@ -210,6 +210,26 @@ app.post('/success-payment',async(req,res)=>{
   const session = await stripe.checkout.sessions.retrieve(
     session_id 
   )
+  const transactionId = session.payment_intent;
+
+  const isPaymentExist = await paymentCollection.findOne({transactionId})
+  if(isPaymentExist){
+    return
+  }
+
+  if(session.payment_status == 'paid'){
+    const paymentInfo = {
+      amount: session.amount_total/100,
+      currency:session.currency,
+      donorEmail:session.customer_email,
+      transactionId,
+      payment_status:session.payment_status,
+      paidAt:new Date()
+
+    }
+    const result = await paymentCollection.insertOne(paymentInfo)
+    return res.send(result)
+  }
 })
 
 
