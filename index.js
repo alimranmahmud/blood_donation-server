@@ -3,6 +3,8 @@ const express = require('express')
 const cors = require("cors")
 require('dotenv').config()
 const port = process.env.PORT || 5000
+const stripe = require('stripe')(process.env.STRIPE_SECRATE);
+const crypto = require('crypto')
 
 const app = express();
 app.use(cors())
@@ -39,47 +41,9 @@ next()
 
 
 
-
-
-// const admin = require("firebase-admin");
-
-// const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8');
-// const serviceAccount = JSON.parse(decoded);
-
-// admin.initializeApp({
-//   credential: admin.credential.cert(serviceAccount)
-// });
-
-
-// const verifyFBToken = async (req, res, next) => {
-//   const token = req.headers.authorization;
-
-//   if (!token) {
-//     return res.status(401).send({ message: "unauthorize access" })
-//   }
-
-//   try {
-//     const idToken = token.split(' ')[1]
-//     const decoded = await admin.auth().verifyIdToken(idToken)
-//     console.log('decoded info', decoded)
-//     req.decoded_email = decoded.email;
-//     next()
-//   }
-//   catch (error) {
-//     return res.status(401).send({ message: 'unauthorize access' })
-
-//   }
-// }
-
-
-
 const uri = "mongodb+srv://garments_user:9rHacx5v975SerIQ@cluster0.wlngie2.mongodb.net/?appName=Cluster0";
 
 
-
-//mongodb
-// name: Blood_web 
-// pass: BEImVsl9VLRYzkkc
 
 
 
@@ -101,6 +65,7 @@ async function run() {
     const database = client.db('garmentsDB')
     const userCollections = database.collection('user')
     const requestCollection = database.collection('request')
+    const paymentCollection = database.collection('payments')
 
 
 
@@ -171,6 +136,81 @@ const page = Number(req.query.page)
     })
  
 
+    //payments
+    // app.post('/create-payment-checkout',async(req,res)=>{
+    //   const information = req.body;
+    //   const amount = parseInt(information.donateAmount)*100
+    //   const session = await stripe.checkout.sessions.create({
+    //     line_items:[
+    //       price_data:{
+    //         currency:'usd',
+    //         unit_amount:amount,
+    //         product_data{
+    //           name:'Please Donate'
+    //         }
+            
+    //       },
+    //       quantity:1,
+    //   }
+    //     ],
+    //     mode:'payment',
+    //     metadata:{
+    //       donorName: information?.donorName     
+    //     },
+    //     customer_email: information.donorEmail,
+    //   success_url:`${process.env.SITE_DOMAIN}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+    // cancel_url: `${process.env.SITE_DOMAIN}/payment-cancelled`  
+    // })
+    // res.send({url:session.url})
+    // })
+
+app.post('/create-payment-checkout', async (req, res) => {
+  try {
+    const information = req.body;
+
+    const amount = Number(information.donateAmount) * 100;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).send({ message: 'Invalid donation amount' });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            unit_amount: amount,
+            product_data: {
+              name: 'Please Donate'
+            }
+          },
+          quantity: 1
+        }
+      ],
+      mode: 'payment',
+      metadata: {
+        donorName: information?.donorName || 'Anonymous'
+      },
+      customer_email: information.donorEmail,
+      success_url: `${process.env.SITE_DOMAIN}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.SITE_DOMAIN}/payment-cancelled`
+    });
+
+    res.send({ url: session.url });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: error.message });
+  }
+});
+
+app.post('/success-payment',async(req,res)=>{
+  const {session_id}=req.query;
+  const session = await stripe.checkout.sessions.retrieve(
+    session_id 
+  )
+})
 
 
 
