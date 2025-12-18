@@ -135,35 +135,39 @@ const page = Number(req.query.page)
       res.send({request:result, totalRequest})
     })
  
+app.get('/search-requests', async (req, res) => {
+  const { bloodGroup, district, upazila } = req.query;
 
-    //payments
-    // app.post('/create-payment-checkout',async(req,res)=>{
-    //   const information = req.body;
-    //   const amount = parseInt(information.donateAmount)*100
-    //   const session = await stripe.checkout.sessions.create({
-    //     line_items:[
-    //       price_data:{
-    //         currency:'usd',
-    //         unit_amount:amount,
-    //         product_data{
-    //           name:'Please Donate'
-    //         }
-            
-    //       },
-    //       quantity:1,
-    //   }
-    //     ],
-    //     mode:'payment',
-    //     metadata:{
-    //       donorName: information?.donorName     
-    //     },
-    //     customer_email: information.donorEmail,
-    //   success_url:`${process.env.SITE_DOMAIN}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-    // cancel_url: `${process.env.SITE_DOMAIN}/payment-cancelled`  
-    // })
-    // res.send({url:session.url})
-    // })
 
+  const query = {}
+  if(!query){
+    return
+  }
+
+  if(bloodGroup){
+    const fixed = bloodGroup.replace(/ /g, "+").trim()
+    query.blood_group = fixed
+  }
+
+if(district){
+  query.recipient_district = district
+}
+
+if(upazila){
+  query.recipient_upazila = upazila
+}
+
+const result = await requestCollection.find(query).toArray()
+res.send(result)
+
+  res.send({
+    success: true,
+    data: { bloodGroup, district, upazila }
+  });
+});
+
+
+//payment
 app.post('/create-payment-checkout', async (req, res) => {
   try {
     const information = req.body;
