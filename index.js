@@ -374,6 +374,18 @@ async function run() {
     });
 
 
+    ////////////////
+    // card details 
+    app.get('/card_details/:id', async (req, res) => {
+
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+      const result = await requestCollection.findOne(query);
+      res.send(result)
+
+    })
+
+
 
 
 
